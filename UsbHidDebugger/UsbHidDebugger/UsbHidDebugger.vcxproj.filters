@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\usb">
+      <UniqueIdentifier>{64b61ff9-25b8-48a5-90b6-9b476a9e6582}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\logger">
+      <UniqueIdentifier>{31c6035e-c53b-4726-a6db-86671109dced}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\logger\iniFile">
+      <UniqueIdentifier>{e01f7388-bfd4-406b-bce4-58a49b1ee89e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UsbHidDebugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UsbHidDebuggerDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UsbHidManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\hidpi.h">
+      <Filter>Source Files\usb</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\hidsdi.h">
+      <Filter>Source Files\usb</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\hidusage.h">
+      <Filter>Source Files\usb</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\setupapi.h">
+      <Filter>Source Files\usb</Filter>
+    </ClInclude>
+    <ClInclude Include="usb\pch.h">
+      <Filter>Source Files\usb</Filter>
+    </ClInclude>
+    <ClInclude Include="logger\configIni\inicpp.h">
+      <Filter>Source Files\logger\iniFile</Filter>
+    </ClInclude>
+    <ClInclude Include="logger\Logger.hpp">
+      <Filter>Source Files\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="logger\pch.h">
+      <Filter>Source Files\logger</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="UsbHidDebugger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UsbHidDebuggerDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UsbHidManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="logger\Logger.cpp">
+      <Filter>Source Files\logger</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="UsbHidDebugger.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\UsbHidDebugger.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="logger\configIni\README.md">
+      <Filter>Source Files\logger\iniFile</Filter>
+    </None>
+    <None Include="logger\configIni\easylog.config">
+      <Filter>Source Files\logger\iniFile</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\UsbHidDebugger.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="usb\hid.lib">
+      <Filter>Source Files\usb</Filter>
+    </Library>
+    <Library Include="usb\setupapi.lib">
+      <Filter>Source Files\usb</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="logger\configIni\LICENSE.txt">
+      <Filter>Source Files\logger\iniFile</Filter>
+    </Text>
+  </ItemGroup>
+</Project>
