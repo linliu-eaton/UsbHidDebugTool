@@ -60,7 +60,6 @@ public:
     afx_msg void OnBnClickedButtonClosedev();
 
     CEdit m_editCtrlCmd;
-    CString m_editValueCmd;
     CButton m_BtnSendCmd;
     CButton m_BtnStopSend;
     afx_msg void OnBnClickedButtonSendmsg();
@@ -93,4 +92,9 @@ public:
 
     unsigned int m_cmdIndex{ 0 };
     std::atomic<bool> m_isStopCmd{false};
+
+    CEdit m_EditInputVid;
+    CEdit m_EditInputPid;
+    unsigned short m_Vid{0};
+    unsigned short m_Pid{0};
 };

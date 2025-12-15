@@ -8,11 +8,44 @@
 #include "UsbHidDebugger.h"
 #include "UsbHidDebuggerDlg.h"
 #include "afxdialogex.h"
-
+#include <string>
+#include <cmath>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+namespace {
+#define INVALID_VALUE -1
+
+    int CstringHex2Int(CString& cstr)
+    {
+        cstr.MakeUpper();
+        cstr.Trim();
+        cstr.Trim(_T("\r\n"));
+        cstr.TrimLeft(_T("0X"));
+        if (cstr.IsEmpty())   // empty
+        {
+            return INVALID_VALUE;
+        }
+    
+        CT2CA pszConvertedAnsiString(cstr);
+        std::string strs(pszConvertedAnsiString);
+        std::reverse(strs.begin(), strs.end());
+        int vid = 0;
+        for (size_t i=0; i<strs.length(); i++) {
+            if (strs[i] >= '0' && strs[i] <= '9') {
+                vid += (strs[i] - 0x30) * (int)std::pow(16, i);
+            } else if ((strs[i] >= 'A' && strs[i] <='F')) {
+                vid += (strs[i] - 0x37) * (int)std::pow(16, i);
+            } else {
+                return INVALID_VALUE;
+            }
+        }
+
+        return vid;
+    }
+}
 
 
 // CAboutDlg dialog used for App About
@@ -61,7 +94,6 @@ CUsbHidDebuggerDlg::CUsbHidDebuggerDlg(CWnd* pParent /*=nullptr*/)
     , m_Edit_ShowManu(_T(""))
     , m_Edit_ShowProd(_T(""))
     , m_Edit_ShowSN(_T(""))
-    , m_editValueCmd(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -69,20 +101,24 @@ CUsbHidDebuggerDlg::CUsbHidDebuggerDlg(CWnd* pParent /*=nullptr*/)
 void CUsbHidDebuggerDlg::DoDataExchange(CDataExchange* pDX)
 {
     CDialogEx::DoDataExchange(pDX);
-    DDX_Control(pDX, IDC_COMBO_SELECTDEV, m_comboSelectDev);
     DDX_Control(pDX, IDC_BUTTON_OPENDEV, m_BtnOpenDev);
     DDX_Control(pDX, IDC_BUTTON_CLOSEDEV, m_BtnCloseDev);
+
     DDX_Text(pDX, IDC_EDIT_SHOWVID, m_Edit_ShowVid);
     DDX_Text(pDX, IDC_EDIT_SHOWPID, m_Edit_ShowPid);
     DDX_Text(pDX, IDC_EDIT_SHOWVER, m_Edit_ShowVer);
     DDX_Text(pDX, IDC_EDIT_SHOWMANU, m_Edit_ShowManu);
     DDX_Text(pDX, IDC_EDIT_SHOWPROD, m_Edit_ShowProd);
     DDX_Text(pDX, IDC_EDIT_SHOWSN, m_Edit_ShowSN);
-    DDX_Control(pDX, IDC_EDIT_CMD, m_editCtrlCmd);
-    DDX_Text(pDX, IDC_EDIT_CMD, m_editValueCmd);
+
     DDX_Control(pDX, IDC_BUTTON_SENDMSG, m_BtnSendCmd);
     DDX_Control(pDX, IDC_BUTTON_STOPSEND, m_BtnStopSend);
+
+    DDX_Control(pDX, IDC_EDIT_CMD, m_editCtrlCmd);
     DDX_Control(pDX, IDC_CHECK_AUTO_R, m_chkCtrlAutoR);
+    DDX_Control(pDX, IDC_CHECK1_AUTOLOOP, m_chkAutoLoop);
+    DDX_Control(pDX, IDC_EDIT_INTERVAL, m_editCtrlCmdIntervals);
+
     DDX_Control(pDX, IDC_CHECK_CMDFWV, m_chkCmdFwv);
     DDX_Control(pDX, IDC_CHECK_CMDUDESC, m_chkCmdUdesc);
     DDX_Control(pDX, IDC_CHECK_CMDUAS, m_chkCmdUas);
@@ -94,9 +130,11 @@ void CUsbHidDebuggerDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_CHECK_CMDBRR, m_chkCmdBrr);
     DDX_Control(pDX, IDC_CHECK_CMDLF, m_chkCmdLf);
     DDX_Control(pDX, IDC_BUTTON_ALLCMD, m_btnCmdAll);
-    DDX_Control(pDX, IDC_CHECK1_AUTOLOOP, m_chkAutoLoop);
+
     DDX_Control(pDX, IDC_EDIT_LOG, m_editCtrlLog);
-    DDX_Control(pDX, IDC_EDIT_INTERVAL, m_editCtrlCmdIntervals);
+
+    DDX_Control(pDX, IDC_EDIT__IN_VID, m_EditInputVid);
+    DDX_Control(pDX, IDC_EDIT__IN_PID, m_EditInputPid);
 }
 
 BEGIN_MESSAGE_MAP(CUsbHidDebuggerDlg, CDialogEx)
@@ -136,25 +174,6 @@ void CUsbHidDebuggerDlg::showLog(CString str)
 	                              showLog(cs);                        \
                             }while(0)
 
-void CUsbHidDebuggerDlg::BuildDevDroplist()
-{
-    m_hidManager.RefreshDevlist();
-	size_t devCount = m_hidManager.GetDevlistCount();
-	for(size_t i=0; i < devCount; i++)
-	{
-		auto dev = m_hidManager.GetCurDevInfo(i);
-		if (!dev.has_value()) {
-			continue;
-		}
-
-		CString cstr = _T("Vid:0x") + m_hidManager.toHexStr(dev.value().Vid) + _T(", ") + _T("Pid:0x") + m_hidManager.toHexStr(dev.value().Pid) + _T(", ") + _T("Ver:") + m_hidManager.toHexStr(dev.value().Ver);
-		m_comboSelectDev.AddString(cstr);
-		SHOW_LOG("Device found: %s", cstr);
-	}
-	SHOW_LOG("Device list refresh OK, total %d devices found.", devCount);
-    log_info("Device list refresh OK, total " << devCount << " devices found.");
-}
-
 BOOL CUsbHidDebuggerDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -185,10 +204,13 @@ BOOL CUsbHidDebuggerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-    SHOW_LOG("initializing......");
-    log_info("initializing......");
-    BuildDevDroplist();
+    SHOW_LOG("---------------------------------------------------");
+    log_info("---------------------------------------------------");
+    
+    m_EditInputVid.EnableWindow(1);
+    m_EditInputPid.EnableWindow(1);
 	m_BtnOpenDev.EnableWindow(1);
+    
 	m_BtnCloseDev.EnableWindow(0);
 	m_editCtrlCmd.EnableWindow(0);
 	m_BtnSendCmd.EnableWindow(0);
@@ -264,30 +286,20 @@ void CUsbHidDebuggerDlg::ShowDevDetailInfo()
     m_Edit_ShowVid = _T("0x") + m_hidManager.GetVidStrHex();
     m_Edit_ShowPid = _T("0x") + m_hidManager.GetPidStrHex();
     m_Edit_ShowVer = _T("0x") + m_hidManager.GetVerStrHex();
-    auto dev = m_hidManager.GetCurDevInfo();
-    unsigned short inRptSz{ 0 };
-    unsigned short OutRptSz{ 0 };
-    if (dev.has_value())
-    {
-        m_Edit_ShowManu = dev.value().manufactureStr;
-        m_Edit_ShowProd = dev.value().productStr;
-        m_Edit_ShowSN = dev.value().serialNumStr;
-        inRptSz = dev.value().InRptBytesLen;
-        OutRptSz = dev.value().OutRptBytesLen;
-    }
+    m_Edit_ShowManu = m_hidManager.GetManufactureStr();
+    m_Edit_ShowProd = m_hidManager.GetProductStr();
+    m_Edit_ShowSN = m_hidManager.GetSerialNum();
     UpdateData(FALSE);
 
-	SHOW_LOG("\r\nSelected device:\r\nVid:%s\r\nPid:%s\r\nVer:%s\r\nManufacture:%s\r\nProduct:%s\r\nSerialNumber:%s\r\nInputReportSize:%d\r\nOutputReportSize:%d\r\n", 
+	SHOW_LOG("\r\nDevice:\r\nVid:%s\r\nPid:%s\r\nVer:%s\r\nManufacture:%s\r\nProduct:%s\r\nSerialNumber:%s\r\nInputReportSize:%d\r\nOutputReportSize:%d\r\n", 
 		      m_Edit_ShowVid,
               m_Edit_ShowPid,
               m_Edit_ShowVer,
               m_Edit_ShowManu,
 			  m_Edit_ShowProd,
 		      m_Edit_ShowSN,
-              inRptSz,
-              OutRptSz);
-	log_info("Selected device: Vid=" << m_Edit_ShowVid << ", Pid= " << m_Edit_ShowPid << ", Ver=" << m_Edit_ShowVer << ", Manufacture:" << m_Edit_ShowManu \
-              << ", Product:" << m_Edit_ShowProd << ", SerialNumber:" << m_Edit_ShowSN << ", InputReportSize=" << inRptSz << ", OutputReportSize=" << OutRptSz); 
+              m_hidManager.InReportSize() - 1,
+              m_hidManager.OutReportSize() - 1);
 }
 
 void CUsbHidDebuggerDlg::UnshowDevDetailInfo()
@@ -303,34 +315,42 @@ void CUsbHidDebuggerDlg::UnshowDevDetailInfo()
 
 void CUsbHidDebuggerDlg::OnBnClickedButtonOpendev()
 {
-    // TODO: Add your control notification handler code here
-    int devIdx = m_comboSelectDev.GetCurSel();
-	SHOW_LOG("Selected Combo box index: %d of totoal %d devices.", devIdx, m_hidManager.GetDevlistCount());
-    log_info("Selected Combo box index: " << devIdx << " of totoal " << m_hidManager.GetDevlistCount() << " devices.");
-    if (CB_ERR == devIdx) {
-        (void)MessageBox(TEXT("Please select a HID device!"), TEXT("Waring"), MB_YESNO | MB_ICONQUESTION);
-        log_info("No HID device selected.");
+    CString editVidStr;
+    m_EditInputVid.GetWindowText(editVidStr);
+    SHOW_LOG("VID=%s", editVidStr);
+    int vid = CstringHex2Int(editVidStr);
+    log_info("VID:" << vid);
+    if (vid < 0)
+    {
+        (void)MessageBox(_T("Invalid VID!"), _T("Waring"), MB_OK);
         return;
     }
 
-    if (devIdx < 0 || devIdx >= m_hidManager.GetDevlistCount())
+    CString editPidStr;
+    m_EditInputPid.GetWindowText(editPidStr);
+    SHOW_LOG("PID=%s", editPidStr);
+    int pid = CstringHex2Int(editPidStr);
+    log_info("PID:" << pid);
+    if (pid < 0)
     {
-        (void)MessageBox(TEXT("Invalid selected HID device!"), TEXT("Waring"), MB_YESNO | MB_ICONQUESTION);
-        log_info("Invalid HID device, index=" << devIdx);
+        (void)MessageBox(_T("Invalid PID!"), _T("Waring"), MB_OK);
         return;
     }
 
-    m_hidManager.SetTargetDev(devIdx);
-    if (!m_hidManager.OpenTargetDev())
+    if (!m_hidManager.OpenHidDev(vid, pid))
     {
-        (void)MessageBox(TEXT("Open device failed!"), TEXT("Waring"), MB_YESNO | MB_ICONQUESTION);
-        log_info("Open device failed!");
+        (void)MessageBox(_T("Open device failed!"), _T("Waring"), MB_OK);
         return;
     }
+    SHOW_LOG("Open HID device OK!");
     log_info("Open HID device OK!");
+    m_Vid = vid;
+    m_Pid = pid;
 
     ShowDevDetailInfo();
 
+    m_EditInputVid.EnableWindow(0);
+    m_EditInputPid.EnableWindow(0);
     m_BtnOpenDev.EnableWindow(0);
     m_BtnCloseDev.EnableWindow(1);
 	m_editCtrlCmd.EnableWindow(1);
@@ -348,9 +368,11 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonClosedev()
     // TODO: Add your control notification handler code here
     m_isStopCmd = true;
 
-    m_hidManager.CloseCurDev();
+    m_hidManager.CloseHidDev();
     UnshowDevDetailInfo();
 
+    m_EditInputVid.EnableWindow(1);
+    m_EditInputPid.EnableWindow(1);
     m_BtnOpenDev.EnableWindow(1);
     m_BtnCloseDev.EnableWindow(0);
 	m_editCtrlCmd.EnableWindow(0);
@@ -372,6 +394,11 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonSendmsg()
     for (auto& cmd : m_CmdLists)
     {
         log_info("cmd: " << cmd);
+    }
+
+    if (m_CmdLists.size() <= 0) {
+        (void)MessageBox(_T("No command to send!"), _T("Waring"), MB_OK);
+        return;
     }
 
     m_editCtrlCmd.EnableWindow(0);
@@ -495,51 +522,42 @@ void CUsbHidDebuggerDlg::GetChkboxCmdLists()
 
 void CUsbHidDebuggerDlg::GetEditCtrlCmdLists()
 {
+    BOOL isAutoR = m_chkCtrlAutoR.GetCheck();
+    log_info("Auto add \\r: " << isAutoR);
+
     CString editCtrlCmdStr;
     m_editCtrlCmd.GetWindowText(editCtrlCmdStr);
     editCtrlCmdStr.Trim();
+    editCtrlCmdStr.Trim(_T("\r\n"));
 
     if (editCtrlCmdStr.IsEmpty())   // empty
     {
         return;
     }
 
-	while (0 == editCtrlCmdStr.Find(_T("\r\n")))
-	{
-		editCtrlCmdStr.Delete(0, CString{_T("\r\n")}.GetLength());
-    }
-
-    BOOL isAutoR = m_chkCtrlAutoR.GetCheck();
-    log_info("Auto add \\r: " << isAutoR);
-
-    if (editCtrlCmdStr.Find(_T("\r\n"), 0) < 0)    // single line
-    {
-        CT2CA pszConvertedAnsiString(editCtrlCmdStr);
-        std::string cmd(pszConvertedAnsiString);
-        if (isAutoR) {
-            cmd += "\r";
-        }
-        m_CmdLists.push_back(cmd);
-        return;
-    }
-
     editCtrlCmdStr += _T("\r\n");
-    int idx = 0;
-    while (idx = editCtrlCmdStr.Find(_T("\r\n"), 0) >= 0)
+    CT2CA pszConvertedAnsiString(editCtrlCmdStr);
+    std::string cmds(pszConvertedAnsiString);
+    
+    std::string cmd{""};
+    for (auto c : cmds)
     {
-        CString cstr = editCtrlCmdStr.Left(idx+1);
-        if (cstr.IsEmpty())
-        {
+        if (c == '\r') {
             continue;
+        } 
+        
+        if (c == '\n') {
+            if (cmd.empty()) {
+                continue;
+            }
+            if (isAutoR) {
+                cmd += "\r";
+            }
+            m_CmdLists.push_back(cmd);
+            cmd = "";
+        } else {
+            cmd.append(std::string{c});
         }
-        CT2CA pszConvertedAnsiString(cstr);
-        std::string cmd(pszConvertedAnsiString);
-        if (isAutoR) {
-            cmd += "\r";
-        }
-        m_CmdLists.push_back(cmd);
-
-        editCtrlCmdStr.Delete(0, idx + 1 + CString{_T("\r\n")}.GetLength());
     }
 }
 

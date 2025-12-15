@@ -10,7 +10,6 @@
 #define IDC_EDIT_LOG                    1000
 #define IDC_STATIC_LOG_INFO             1001
 #define IDC_BUTTON_CLRLOG               1002
-#define IDC_COMBO_SELECTDEV             1003
 #define IDC_BUTTON_OPENDEV              1004
 #define IDC_BUTTON_CLOSEDEV             1005
 #define IDC_EDIT_SHOWPID                1006
@@ -43,6 +42,9 @@
 #define IDC_CHECK1_AUTOLOOP             1033
 #define IDC_EDIT_INTERVAL               1034
 #define IDC_EDIT2                       1035
+#define IDC_EDIT__IN_PID                1035
+#define IDC_EDIT1                       1036
+#define IDC_EDIT__IN_VID                1036
 
 // Next default values for new objects
 // 
@@ -50,7 +52,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

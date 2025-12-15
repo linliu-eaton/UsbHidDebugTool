@@ -25,7 +25,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <optional>
 
 #ifdef __cplusplus
@@ -41,85 +40,74 @@ extern "C" {
 
 namespace usb::hid
 {
-    constexpr unsigned short W_UNSET{ 0xFFFF };
-    constexpr int DW_UNSET{ -1 };
 
-    struct UsbDevInfo
+    struct HidDevInfo
     {
-        unsigned short Vid{ W_UNSET };
-        unsigned short Pid{ W_UNSET };
-        unsigned short Ver{ W_UNSET };
+        unsigned short Vid{ 0 };
+        unsigned short Pid{ 0 };
+        unsigned short Ver{ 0 };
         CString manufactureStr{_T("")};
         CString productStr{_T("")};
         CString serialNumStr{_T("")};
-        unsigned short InRptBytesLen{0};
-        unsigned short OutRptBytesLen{0};
-        PSP_DEVICE_INTERFACE_DETAIL_DATA detailData{ nullptr };
+        unsigned short InRptBytesLen{ 0 };
+        unsigned short OutRptBytesLen{ 0 };
 
-        UsbDevInfo() = default;
-        virtual ~UsbDevInfo()
+        HidDevInfo() = default;
+        virtual ~HidDevInfo() = default;
+
+        HidDevInfo(const HidDevInfo& other) = delete;
+        HidDevInfo& operator=(const HidDevInfo& other) = delete;
+        HidDevInfo(HidDevInfo&& other) = delete;
+        HidDevInfo& operator=(HidDevInfo&& other) = delete;
+
+        void init()
         {
-            if (detailData) {
-                free(detailData);
-                detailData = nullptr;
-            }
+            Vid = 0;
+            Pid = 0;
+            Ver = 0;
+            manufactureStr = _T("");
+            productStr = _T("");
+            serialNumStr = _T("");
+            InRptBytesLen = 0;
+            OutRptBytesLen = 0;
         }
-
-        UsbDevInfo(const UsbDevInfo& other) = default;
-        UsbDevInfo& operator=(const UsbDevInfo& other) = default;
-        UsbDevInfo(UsbDevInfo&& other) = default;
-        UsbDevInfo& operator=(UsbDevInfo&& other) = default;
     };
 
-    enum class DevMatchStrategy
-    {
-        VID_ONLY = 0,
-        VID_PID,
-        VID_PID_VER,
-        VID_PID_SN,
-        VID_PID_VER_SN
-    };
 
     class UsbHidManager
     {
     public:
         explicit UsbHidManager() = default;
-        virtual ~UsbHidManager() = default;
+        virtual ~UsbHidManager()
+        {
+            CloseHidDev();
+        }
 
-        void FindOneTargetHidDev(const UsbDevInfo& dev, DevMatchStrategy strategy = DevMatchStrategy::VID_PID_VER);
+        bool OpenHidDev(unsigned short vid, unsigned short pid);
+        void CloseHidDev()
+        {
+            if (m_devHandle != nullptr)
+            {
+                CloseHandle(m_devHandle);
+                m_devHandle = nullptr;
+            } 
+        }
+
         CString GetVidStrHex();
         CString GetPidStrHex();
         CString GetVerStrHex();
-        std::optional<UsbDevInfo> GetCurDevInfo(size_t index);
-        std::optional<UsbDevInfo> GetCurDevInfo();
-        void RefreshDevlist();
-        int GetDevlistCount()
-        {
-            size_t sz = m_hidDevList.size();
-            return static_cast<int>(sz);
-        }
-
-        CString toHexStr(unsigned short val);
-
-        void SetTargetDev(int idx)
-        {
-            m_curDevIdx = idx;
-        }
-
-        void CloseCurDev();
-        bool OpenTargetDev();
+        CString GetManufactureStr();
+        CString GetProductStr();
+        CString GetSerialNum();
+        unsigned short InReportSize();
+        unsigned short OutReportSize();
 
         int SendCmds(std::string& cmd);
-
         int RecvRsp(char* resultBuff, const int bufLen);
 
     private:
-        std::vector<UsbDevInfo> m_hidDevList;
-        int m_curDevIdx{ DW_UNSET };
-
+        HidDevInfo m_hidDev;
         HANDLE m_devHandle{nullptr};
-
-
 
     }; // class
 } // namespace
