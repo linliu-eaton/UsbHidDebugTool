@@ -10,13 +10,32 @@
 #include "afxdialogex.h"
 #include <string>
 #include <cmath>
+#include <chrono>
+#include <iomanip>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 namespace {
-#define INVALID_VALUE -1
+    #define INVALID_VALUE -1
+
+    std::string getLocalTime()
+    {
+        const std::string TIME_FORMAT{ "%Y-%m-%d %H:%M:%S" };
+        std::stringstream ss;
+        auto now = std::chrono::system_clock::now();
+        uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()
+            - std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count() * 1000;
+
+        time_t t = std::chrono::system_clock::to_time_t(now);
+        struct tm st;
+        localtime_s(&st, &t);
+        ss << std::put_time(&st, TIME_FORMAT.c_str());
+        ss << "." << ms;
+        std::string tmStr = ss.str();
+        return tmStr;
+    }
 
     int CstringHex2Int(CString& cstr)
     {
@@ -135,6 +154,7 @@ void CUsbHidDebuggerDlg::DoDataExchange(CDataExchange* pDX)
 
     DDX_Control(pDX, IDC_EDIT__IN_VID, m_EditInputVid);
     DDX_Control(pDX, IDC_EDIT__IN_PID, m_EditInputPid);
+    DDX_Control(pDX, IDC_EDIT_TIMEOUT, m_editTimeout);
 }
 
 BEGIN_MESSAGE_MAP(CUsbHidDebuggerDlg, CDialogEx)
@@ -156,13 +176,16 @@ void CUsbHidDebuggerDlg::showLog(CString str)
 {
     m_editCtrlLog.LineScroll(m_editCtrlLog.GetLineCount());
 
-    const size_t  maxLogSize{65535};
+    const size_t  maxLogSize{20 * 1024 * 1024};
     if (m_editLog.GetLength() >= maxLogSize)
     {
         m_editLog = _T("");
-    } 
+    }
 
-    CString s = str + _T("\r\n");
+    std::string now = getLocalTime();
+    CString nowTime(now.c_str());
+
+    CString s = nowTime + _T(" ") + str + _T("\r\n");
     m_editLog += s;
     m_editCtrlLog.SetWindowText(m_editLog);
     m_editCtrlLog.LineScroll(m_editCtrlLog.GetLineCount());
@@ -218,6 +241,7 @@ BOOL CUsbHidDebuggerDlg::OnInitDialog()
 	m_chkCtrlAutoR.EnableWindow(0);
     m_chkAutoLoop.EnableWindow(0);
     m_editCtrlCmdIntervals.EnableWindow(0);
+    m_editTimeout.EnableWindow(0);
     DisableAllCmdChkbox();
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -359,6 +383,7 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonOpendev()
 	m_chkCtrlAutoR.EnableWindow(1);
     m_chkAutoLoop.EnableWindow(1);
     m_editCtrlCmdIntervals.EnableWindow(1);
+    m_editTimeout.EnableWindow(1);
     EnableAllCmdChkbox();
 }
 
@@ -366,7 +391,10 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonOpendev()
 void CUsbHidDebuggerDlg::OnBnClickedButtonClosedev()
 {
     // TODO: Add your control notification handler code here
-    m_isStopCmd = true;
+    m_cmdIndex = 0;
+    m_loopCounter = 0;
+    KillTimer(TIMER_CHK_RSP_INNER);
+    KillTimer(TIMER_CMD_INTERV);
 
     m_hidManager.CloseHidDev();
     UnshowDevDetailInfo();
@@ -381,6 +409,7 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonClosedev()
 	m_chkCtrlAutoR.EnableWindow(0);
     m_chkAutoLoop.EnableWindow(0);
     m_editCtrlCmdIntervals.EnableWindow(0);
+    m_editTimeout.EnableWindow(0);
     DisableAllCmdChkbox();
 }
 
@@ -388,8 +417,6 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonClosedev()
 void CUsbHidDebuggerDlg::OnBnClickedButtonSendmsg()
 {
     // TODO: Add your control notification handler code here
-    m_isStopCmd = false;
-
     GetCmdLists();
     for (auto& cmd : m_CmdLists)
     {
@@ -407,18 +434,37 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonSendmsg()
 	m_chkCtrlAutoR.EnableWindow(0);
     m_chkAutoLoop.EnableWindow(0);
     m_editCtrlCmdIntervals.EnableWindow(0);
+    m_editTimeout.EnableWindow(0);
     DisableAllCmdChkbox();
 
     CString csint;
     m_editCtrlCmdIntervals.GetWindowText(csint);
+    SHOW_LOG("Recv cmd timeout: %s", csint);
     int interval = _ttoi(csint);
-    interval = interval > 0 ? interval : 500;  // 500ms as default
+    m_cmdInterval = interval > 0 ? interval : DEFAULT_CMD_INTERV_MS;
+    log_info("Recv cmd timeout: " << m_cmdInterval);
+    CString feedInterv;
+    feedInterv.Format(_T("%d"), m_cmdInterval);
+    m_editCtrlCmdIntervals.SetWindowText(feedInterv);
 
-    SetTimer(TIMER_HID_RX, interval, NULL);
+    CString cstmout;
+    m_editTimeout.GetWindowText(cstmout);
+    SHOW_LOG("Send cmd interval: %s", cstmout);
+    int tmout = _ttoi(cstmout);
+    m_cmdTimeout = tmout > DEFAULT_CMD_RECV_TIMEOUT_MS ? tmout : DEFAULT_CMD_RECV_TIMEOUT_MS;
+    log_info("Send cmd interval: " << m_cmdTimeout);
+    CString feedTmout;
+    feedTmout.Format(_T("%d"), m_cmdTimeout);
+    m_editTimeout.SetWindowText(feedTmout);
+
+    SetTimer(TIMER_CHK_RSP_INNER, TIMER_CHK_RSP_INNER_TIMEOUT, NULL);
 
     m_cmdIndex = 0;
+    m_loopCounter = 0;
+    SHOW_LOG("-------------------loop %d -------------------", m_loopCounter);
+    log_info("-------------------loop " << m_loopCounter << " -------------------");
     std::string cmd = m_CmdLists[m_cmdIndex];
-    m_hidManager.SendCmds(cmd);
+    m_hidManager.SendCmd(cmd);
 
     CString cstr(cmd.c_str());
     SHOW_LOG("Command: %s", cstr);
@@ -429,7 +475,10 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonSendmsg()
 void CUsbHidDebuggerDlg::OnBnClickedButtonStopsend()
 {
     // TODO: Add your control notification handler code here
-    m_isStopCmd = true;
+    m_cmdIndex = 0;
+    m_loopCounter = 0;
+    KillTimer(TIMER_CHK_RSP_INNER);
+    KillTimer(TIMER_CMD_INTERV);
 
     m_editCtrlCmd.EnableWindow(1);
     m_BtnSendCmd.EnableWindow(1);
@@ -437,6 +486,7 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonStopsend()
 	m_chkCtrlAutoR.EnableWindow(1);
     m_chkAutoLoop.EnableWindow(1);
     m_editCtrlCmdIntervals.EnableWindow(1);
+    m_editTimeout.EnableWindow(1);
     EnableAllCmdChkbox();
 }
 
@@ -578,11 +628,13 @@ void CUsbHidDebuggerDlg::OnTimer(UINT_PTR nIDEvent)
     switch(nIDEvent) 
     {
     //Wait boot device attach timer
-    case TIMER_HID_RX:
+    case TIMER_CHK_RSP_INNER:
         {
+            KillTimer(TIMER_CHK_RSP_INNER);
+
             // recv last response
             char msgRsp[255] = {0};
-            m_hidManager.RecvRsp(&(msgRsp[0]), sizeof(msgRsp));
+            m_hidManager.RecvRsp(&(msgRsp[0]), sizeof(msgRsp), m_cmdTimeout);
             if (msgRsp[1]) {
                 std::string cmd = &msgRsp[1];
                 CString cstr(cmd.c_str());
@@ -591,43 +643,52 @@ void CUsbHidDebuggerDlg::OnTimer(UINT_PTR nIDEvent)
                 SHOW_LOG("Response: ---");
             }
 
-            if (m_isStopCmd) {
-                m_cmdIndex = 0;
-                KillTimer(TIMER_HID_RX);
-                break;
-            }
+            SetTimer(TIMER_CMD_INTERV, m_cmdInterval, NULL);
+        }
+        break;
+
+    case TIMER_CMD_INTERV:
+        {
+            KillTimer(TIMER_CMD_INTERV);
 
             // send next command
             m_cmdIndex++;
             if (m_cmdIndex < m_CmdLists.size()) {
                 std::string cmd = m_CmdLists[m_cmdIndex];
-                m_hidManager.SendCmds(cmd);
+                m_hidManager.SendCmd(cmd);
                 CString cstr(cmd.c_str());
                 SHOW_LOG("Command: %s", cstr);
+                SetTimer(TIMER_CHK_RSP_INNER, TIMER_CHK_RSP_INNER_TIMEOUT, NULL);
             } else {
                 if (m_chkAutoLoop.GetCheck())
                 {
+                    m_loopCounter++;
+                    SHOW_LOG("-------------------loop %d -------------------", m_loopCounter);
+                    log_info("-------------------loop " << m_loopCounter << " -------------------");
+
                     m_cmdIndex = 0;
                     std::string cmd = m_CmdLists[m_cmdIndex];
-                    m_hidManager.SendCmds(cmd);
+                    m_hidManager.SendCmd(cmd);
                     CString cstr(cmd.c_str());
                     SHOW_LOG("Command: %s", cstr);
+                    SetTimer(TIMER_CHK_RSP_INNER, TIMER_CHK_RSP_INNER_TIMEOUT, NULL);
                 } else {
                     m_cmdIndex = 0;
-                    KillTimer(TIMER_HID_RX);
-                    //
+                    m_loopCounter = 0;
+
                     m_editCtrlCmd.EnableWindow(1);
                     m_BtnSendCmd.EnableWindow(1);
                     m_BtnStopSend.EnableWindow(0);
                     m_chkCtrlAutoR.EnableWindow(1);
                     m_chkAutoLoop.EnableWindow(1);
                     m_editCtrlCmdIntervals.EnableWindow(1);
+                    m_editTimeout.EnableWindow(1);
                     EnableAllCmdChkbox();
                 }
             }
         }
-
         break;
+
     default:
         break;
     }

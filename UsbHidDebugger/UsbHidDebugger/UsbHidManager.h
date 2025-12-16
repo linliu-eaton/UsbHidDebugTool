@@ -40,6 +40,8 @@ extern "C" {
 
 namespace usb::hid
 {
+    #define DEFAULT_CMD_RECV_TIMEOUT_MS  1000
+    #define DEFAULT_CMD_INTERV_MS        10
 
     struct HidDevInfo
     {
@@ -102,8 +104,8 @@ namespace usb::hid
         unsigned short InReportSize();
         unsigned short OutReportSize();
 
-        int SendCmds(std::string& cmd);
-        int RecvRsp(char* resultBuff, const int bufLen);
+        int SendCmd(std::string& cmd);
+        int RecvRsp(char* resultBuff, const int bufLen, int timeout);
 
     private:
         HidDevInfo m_hidDev;

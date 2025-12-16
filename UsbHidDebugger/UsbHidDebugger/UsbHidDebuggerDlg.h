@@ -8,8 +8,11 @@
 #include <vector>
 #include "UsbHidManager.h"
 
+#define TIMER_CHK_RSP_INNER     100
+#define TIMER_CMD_INTERV        300
 
-#define TIMER_HID_RX  100
+#define TIMER_CHK_RSP_INNER_TIMEOUT  5   // ms
+
 
 // CUsbHidDebuggerDlg dialog
 class CUsbHidDebuggerDlg : public CDialogEx
@@ -43,13 +46,15 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
     usb::hid::UsbHidManager m_hidManager;
+
     CEdit m_editCtrlLog;
     CString m_editLog;
-    CComboBox m_comboSelectDev;
     afx_msg void OnBnClickedButtonClrlog();
+
     CButton m_BtnOpenDev;
     CButton m_BtnCloseDev;
     afx_msg void OnBnClickedButtonOpendev();
+    afx_msg void OnBnClickedButtonClosedev();
 
     CString m_Edit_ShowVid;
     CString m_Edit_ShowPid;
@@ -57,7 +62,6 @@ public:
     CString m_Edit_ShowManu;
     CString m_Edit_ShowProd;
     CString m_Edit_ShowSN;
-    afx_msg void OnBnClickedButtonClosedev();
 
     CEdit m_editCtrlCmd;
     CButton m_BtnSendCmd;
@@ -65,6 +69,11 @@ public:
     afx_msg void OnBnClickedButtonSendmsg();
     afx_msg void OnBnClickedButtonStopsend();
     CButton m_chkCtrlAutoR;
+    CButton m_chkAutoLoop;
+    CEdit m_editCtrlCmdIntervals;
+    int m_cmdInterval;
+    CEdit m_editTimeout;
+    int m_cmdTimeout;
 
     CButton m_chkCmdFwv;
     CButton m_chkCmdUdesc;
@@ -82,19 +91,17 @@ public:
     void DisableAllCmdChkbox();
 
     std::vector<std::string> m_CmdLists{};
+    unsigned int m_cmdIndex{ 0 };
+    unsigned int m_loopCounter{ 0 };
     void GetChkboxCmdLists();
     void GetEditCtrlCmdLists();
     void GetCmdLists();
 
-    CButton m_chkAutoLoop;
-    CEdit m_editCtrlCmdIntervals;
     afx_msg void OnTimer(UINT_PTR nIDEvent);
-
-    unsigned int m_cmdIndex{ 0 };
-    std::atomic<bool> m_isStopCmd{false};
 
     CEdit m_EditInputVid;
     CEdit m_EditInputPid;
     unsigned short m_Vid{0};
     unsigned short m_Pid{0};
+
 };

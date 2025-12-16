@@ -43,8 +43,9 @@
 #define IDC_EDIT_INTERVAL               1034
 #define IDC_EDIT2                       1035
 #define IDC_EDIT__IN_PID                1035
-#define IDC_EDIT1                       1036
 #define IDC_EDIT__IN_VID                1036
+#define IDC_EDIT_INTERVAL2              1037
+#define IDC_EDIT_TIMEOUT                1037
 
 // Next default values for new objects
 // 

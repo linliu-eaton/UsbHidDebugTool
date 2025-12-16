@@ -203,25 +203,35 @@ namespace usb::hid
         return m_hidDev.OutRptBytesLen;
     }
 
-    int UsbHidManager::SendCmds(std::string& cmd)
+    int UsbHidManager::SendCmd(std::string& cmd)
     {
-        log_info("SendCmds: cmd:" << cmd);
+        log_info("SendCmd: cmd:" << cmd);
     
         unsigned char array[255] = {0};
         memset(&(array[0]), 0, sizeof(array));
         memcpy_s(&(array[1]), sizeof(array) - 2, cmd.c_str(), cmd.length());
 
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
         int ret = HidD_SetOutputReport(m_devHandle, array, m_hidDev.OutRptBytesLen);
         return ret;
     }
 
-    int UsbHidManager::RecvRsp(char* resultBuff, const int bufLen)
+    int UsbHidManager::RecvRsp(char* resultBuff, const int bufLen, int timeout)
     {
         if (!resultBuff || bufLen <= 0) {
             return FALSE;
         }
+        timeout = timeout > DEFAULT_CMD_RECV_TIMEOUT_MS ? timeout : DEFAULT_CMD_RECV_TIMEOUT_MS;
 
         DWORD bytesRead{ 0 };
+
+        COMMTIMEOUTS timeouts;
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = timeout;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 0;
+        SetCommTimeouts(m_devHandle, &timeouts);
         int ret = ReadFile(m_devHandle, resultBuff, m_hidDev.InRptBytesLen, &bytesRead, NULL);
 
         log_info("RecvRsp: rsp:" << std::string{resultBuff + 1});
