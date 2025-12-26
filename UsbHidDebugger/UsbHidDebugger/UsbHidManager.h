@@ -37,6 +37,8 @@ extern "C" {
 }
 #endif
 
+#include <Dbt.h>
+
 
 namespace usb::hid
 {
@@ -104,12 +106,15 @@ namespace usb::hid
         unsigned short InReportSize();
         unsigned short OutReportSize();
 
+        BOOL IsMyDevice(LPARAM lParam);
+
         int SendCmd(std::string& cmd);
         int RecvRsp(char* resultBuff, const int bufLen, int timeout);
 
     private:
         HidDevInfo m_hidDev;
         HANDLE m_devHandle{nullptr};
+        CString m_devPathName{_T("")};
 
     }; // class
 } // namespace

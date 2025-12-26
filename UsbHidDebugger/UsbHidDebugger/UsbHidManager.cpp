@@ -101,6 +101,8 @@ namespace usb::hid
             Attributes.Size = sizeof(Attributes);
             (void)HidD_GetAttributes(DeviceHandle, &Attributes);
             if (Attributes.VendorID == vid && Attributes.ProductID == pid) {
+                m_devPathName = detailData->DevicePath;
+
                 m_hidDev.Vid = Attributes.VendorID;
                 m_hidDev.Pid = Attributes.ProductID;
                 m_hidDev.Ver = Attributes.VersionNumber;
@@ -201,6 +203,23 @@ namespace usb::hid
     unsigned short UsbHidManager::OutReportSize()
     {
         return m_hidDev.OutRptBytesLen;
+    }
+
+    BOOL UsbHidManager::IsMyDevice(LPARAM lParam)
+    {
+        PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)lParam;
+        if (lpdb->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE) {
+            return FALSE;
+        }
+
+        PDEV_BROADCAST_DEVICEINTERFACE lpdbi = (PDEV_BROADCAST_DEVICEINTERFACE)lParam;
+        CString devName = lpdbi->dbcc_name;
+        if ((devName.CompareNoCase(m_devPathName)) == 0)
+        {
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     int UsbHidManager::SendCmd(std::string& cmd)

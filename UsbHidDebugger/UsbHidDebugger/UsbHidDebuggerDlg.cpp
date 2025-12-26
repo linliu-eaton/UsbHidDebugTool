@@ -168,6 +168,7 @@ BEGIN_MESSAGE_MAP(CUsbHidDebuggerDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON_STOPSEND, &CUsbHidDebuggerDlg::OnBnClickedButtonStopsend)
     ON_BN_CLICKED(IDC_BUTTON_ALLCMD, &CUsbHidDebuggerDlg::OnBnClickedButtonAllcmd)
     ON_WM_TIMER()
+    ON_MESSAGE(WM_DEVICECHANGE, OnUsbHidDevChange)
 END_MESSAGE_MAP()
 
 
@@ -243,6 +244,7 @@ BOOL CUsbHidDebuggerDlg::OnInitDialog()
     m_editCtrlCmdIntervals.EnableWindow(0);
     m_editTimeout.EnableWindow(0);
     DisableAllCmdChkbox();
+    m_isDevClosed = true;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -337,6 +339,59 @@ void CUsbHidDebuggerDlg::UnshowDevDetailInfo()
     UpdateData(FALSE);
 }
 
+void CUsbHidDebuggerDlg::RegisterForDeviceNotifications()
+{
+    log_info("register device plugout notification...");
+	// Request to receive messages when a device is attached or removed.
+	// Also see WM_DEVICECHANGE in BEGIN_MESSAGE_MAP(CUsbhidiocDlg, CDialog).
+
+    GUID hidGuid;
+    HidD_GetHidGuid(&hidGuid);
+
+	DEV_BROADCAST_DEVICEINTERFACE DevBroadcastDeviceInterface;
+
+	DevBroadcastDeviceInterface.dbcc_size = sizeof(DevBroadcastDeviceInterface);
+	DevBroadcastDeviceInterface.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+	DevBroadcastDeviceInterface.dbcc_classguid = hidGuid;
+
+	RegisterDeviceNotification(m_hWnd, &DevBroadcastDeviceInterface, DEVICE_NOTIFY_WINDOW_HANDLE);
+}
+
+LRESULT CUsbHidDebuggerDlg::OnUsbHidDevChange(WPARAM wParam, LPARAM lParam)
+{
+	PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)lParam;
+ 
+	switch(wParam) 
+	{
+		// Find out if a device has been attached or removed.
+		// If yes, see if the name matches the device path name of the device we want to access.
+ 
+	case DBT_DEVICEARRIVAL:		        // HID pull in
+        log_info("device plugin, do nothing...");
+		return TRUE; 
+ 
+	case DBT_DEVICEREMOVECOMPLETE:		// HID pull out
+        // Is my device?
+        if (m_hidManager.IsMyDevice(lParam)) {
+            if (m_isDevClosed) {
+                return TRUE;
+            }
+            
+            OnBnClickedButtonClosedev();
+            SHOW_LOG("Device has been unplugged!");
+            log_info("a device plugout, It is my device.");
+            return TRUE;
+        }
+        log_info("a device plugout, not my device.");
+		return TRUE; 
+ 
+	default:
+		return TRUE; 
+	}
+
+	return TRUE;
+}
+
 void CUsbHidDebuggerDlg::OnBnClickedButtonOpendev()
 {
     CString editVidStr;
@@ -372,6 +427,9 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonOpendev()
     m_Pid = pid;
 
     ShowDevDetailInfo();
+
+    RegisterForDeviceNotifications();  // register hid dev plutout notification
+    m_isDevClosed = false;
 
     m_EditInputVid.EnableWindow(0);
     m_EditInputPid.EnableWindow(0);
@@ -411,6 +469,7 @@ void CUsbHidDebuggerDlg::OnBnClickedButtonClosedev()
     m_editCtrlCmdIntervals.EnableWindow(0);
     m_editTimeout.EnableWindow(0);
     DisableAllCmdChkbox();
+    m_isDevClosed = true;
 }
 
 
