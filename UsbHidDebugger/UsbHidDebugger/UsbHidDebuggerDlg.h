@@ -34,6 +34,8 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 
+    void RegisterForDeviceNotifications();
+
 // Implementation
 protected:
 	HICON m_hIcon;
@@ -45,6 +47,8 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+    LRESULT OnUsbHidDevChange(WPARAM wParam, LPARAM lParam);
+
     usb::hid::UsbHidManager m_hidManager;
 
     CEdit m_editCtrlLog;
@@ -103,5 +107,7 @@ public:
     CEdit m_EditInputPid;
     unsigned short m_Vid{0};
     unsigned short m_Pid{0};
+
+    bool m_isDevClosed{true};
 
 };
