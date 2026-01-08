@@ -29,7 +29,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
-#include "./logger/Logger.hpp"
+#include "utils.h"
 #include "UsbHidManager.h"
 
 
@@ -103,19 +103,20 @@ namespace usb::hid
             if (Attributes.VendorID == vid && Attributes.ProductID == pid) {
                 m_devPathName = detailData->DevicePath;
 
+                m_hidDev.init();
                 m_hidDev.Vid = Attributes.VendorID;
                 m_hidDev.Pid = Attributes.ProductID;
                 m_hidDev.Ver = Attributes.VersionNumber;
 
-                WCHAR manufactures[255];
+                WCHAR manufactures[utils::BUFF_SZIE];
                 memset(manufactures, 0, sizeof(manufactures));
                 (void)HidD_GetManufacturerString(DeviceHandle, (PVOID)manufactures, sizeof(manufactures));
                 m_hidDev.manufactureStr = manufactures;
-                WCHAR products[255];
+                WCHAR products[utils::BUFF_SZIE];
                 memset(products, 0, sizeof(products));
                 (void)HidD_GetProductString(DeviceHandle, (PVOID)products, sizeof(products));
                 m_hidDev.productStr = products;
-                WCHAR serialN[255];
+                WCHAR serialN[utils::BUFF_SZIE];
                 memset(serialN, 0, sizeof(serialN));
                 (void)HidD_GetSerialNumberString(DeviceHandle, (PVOID)serialN, sizeof(serialN));
                 m_hidDev.serialNumStr = serialN;
@@ -127,6 +128,7 @@ namespace usb::hid
                 HidD_FreePreparsedData(PreparsedData);
                 m_hidDev.InRptBytesLen = Capabilities.InputReportByteLength;
                 m_hidDev.OutRptBytesLen = Capabilities.OutputReportByteLength;
+                m_hidDev.FeatureBytesLen = Capabilities.FeatureReportByteLength;
                 m_devHandle = DeviceHandle;
 
                 free(detailData);
@@ -205,6 +207,11 @@ namespace usb::hid
         return m_hidDev.OutRptBytesLen;
     }
 
+    unsigned short UsbHidManager::FeatureRptSize()
+    {
+        return m_hidDev.FeatureBytesLen;
+    }
+
     BOOL UsbHidManager::IsMyDevice(LPARAM lParam)
     {
         PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)lParam;
@@ -226,12 +233,12 @@ namespace usb::hid
     {
         log_info("SendCmd: cmd:" << cmd);
     
-        unsigned char array[255] = {0};
+        unsigned char array[utils::BUFF_SZIE] = {0};
         memset(&(array[0]), 0, sizeof(array));
         memcpy_s(&(array[1]), sizeof(array) - 2, cmd.c_str(), cmd.length());
 
         PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
-        int ret = HidD_SetOutputReport(m_devHandle, array, m_hidDev.OutRptBytesLen);
+        int ret = HidD_SetOutputReport(m_devHandle, array, sizeof(array));
         return ret;
     }
 
@@ -259,6 +266,96 @@ namespace usb::hid
         }
         
         return FALSE;
+    }
+
+    // for shut or power device
+    bool UsbHidManager::SetReport(uint8_t* data)
+    {
+        if (!data) {
+            return false;
+        }
+
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
+
+        int ret = HidD_SetOutputReport(m_devHandle, data, utils::BUFF_SZIE);
+
+        return ret;
+    }
+
+    bool UsbHidManager::GetReport(uint8_t* data, int tmout)
+    {
+        if (!data) {
+            return false;
+        }
+
+        COMMTIMEOUTS timeouts;
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = tmout;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 0;
+        SetCommTimeouts(m_devHandle, &timeouts);
+
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
+
+        int ret = HidD_GetInputReport(m_devHandle, data, utils::BUFF_SZIE);
+
+        return ret;
+    }
+
+    bool UsbHidManager::SetFeature(uint8_t* data)
+    {
+        if (!data) {
+            return false;
+        }
+
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
+
+        int ret = HidD_SetFeature(m_devHandle, data, utils::BUFF_SZIE);
+
+        return ret;
+    }
+
+    bool UsbHidManager::GetFeature(uint8_t* data, int tmout)
+    {
+        if (!data) {
+            return false;
+        }
+
+        COMMTIMEOUTS timeouts;
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = tmout;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 0;
+        SetCommTimeouts(m_devHandle, &timeouts);
+
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
+
+        int ret = HidD_GetFeature(m_devHandle, data, utils::BUFF_SZIE);
+
+        return ret;
+    }
+
+    bool UsbHidManager::GetStrDescriptor(ULONG index, uint8_t* data, int tmout)
+    {
+        if (!data) {
+            return false;
+        }
+
+        COMMTIMEOUTS timeouts;
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.ReadTotalTimeoutConstant = tmout;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 0;
+        SetCommTimeouts(m_devHandle, &timeouts);
+
+        PurgeComm(m_devHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
+
+        int ret = HidD_GetIndexedString(m_devHandle, index, data, utils::BUFF_SZIE);
+
+        return ret;
     }
 
 } // namespace

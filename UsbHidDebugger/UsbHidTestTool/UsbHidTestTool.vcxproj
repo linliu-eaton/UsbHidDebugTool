@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{73F35914-158D-4DE4-9AC6-DC25668A3FE1}</ProjectGuid>
+    <ProjectGuid>{EAB90B74-C67F-4C2E-BA74-975836035FBA}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
-    <RootNamespace>UsbHidDebugger</RootNamespace>
+    <RootNamespace>UsbHidTestTool</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -95,7 +95,6 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +144,6 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -192,22 +190,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="HidTestQProto.h" />
+    <ClInclude Include="HidTestShutProto.h" />
     <ClInclude Include="logger\configIni\inicpp.h" />
     <ClInclude Include="logger\Logger.hpp" />
     <ClInclude Include="logger\pch.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="UsbHidDebugger.h" />
-    <ClInclude Include="UsbHidDebuggerDlg.h" />
     <ClInclude Include="UsbHidManager.h" />
+    <ClInclude Include="UsbHidTestTool.h" />
+    <ClInclude Include="UsbHidTestToolDlg.h" />
     <ClInclude Include="usb\hidpi.h" />
     <ClInclude Include="usb\hidsdi.h" />
     <ClInclude Include="usb\hidusage.h" />
     <ClInclude Include="usb\pch.h" />
     <ClInclude Include="usb\setupapi.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="HidTestQProto.cpp" />
+    <ClCompile Include="HidTestShutProto.cpp" />
     <ClCompile Include="logger\Logger.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -215,27 +218,28 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UsbHidDebugger.cpp" />
-    <ClCompile Include="UsbHidDebuggerDlg.cpp" />
     <ClCompile Include="UsbHidManager.cpp" />
+    <ClCompile Include="UsbHidTestTool.cpp" />
+    <ClCompile Include="UsbHidTestToolDlg.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="UsbHidDebugger.rc" />
+    <ResourceCompile Include="UsbHidTestTool.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="logger\configIni\easylog.config" />
     <None Include="logger\configIni\README.md" />
-    <None Include="res\UsbHidDebugger.rc2" />
+    <None Include="res\UsbHidTestTool.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\UsbHidDebugger.ico" />
+    <Image Include="res\UsbHidTestTool.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="logger\configIni\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="usb\hid.lib" />
     <Library Include="usb\setupapi.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="logger\configIni\LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

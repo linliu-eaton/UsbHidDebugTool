@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.0] - 2026-1-8
+### Added
+- Add shut protocol and power device protocol support.  
+### Changed
+### Fixed
+### Known issues
+
 ## [1.1] - 2025-12-27
 ### Added
 - Subscribe device change notification to detect hid deivce plug-out.

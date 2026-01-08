@@ -55,6 +55,7 @@ namespace usb::hid
         CString serialNumStr{_T("")};
         unsigned short InRptBytesLen{ 0 };
         unsigned short OutRptBytesLen{ 0 };
+        unsigned short FeatureBytesLen{ 0 };
 
         HidDevInfo() = default;
         virtual ~HidDevInfo() = default;
@@ -74,6 +75,7 @@ namespace usb::hid
             serialNumStr = _T("");
             InRptBytesLen = 0;
             OutRptBytesLen = 0;
+            FeatureBytesLen = 0;
         }
     };
 
@@ -94,7 +96,10 @@ namespace usb::hid
             {
                 CloseHandle(m_devHandle);
                 m_devHandle = nullptr;
-            } 
+            }
+
+            m_devPathName = "";
+            m_hidDev.init();
         }
 
         CString GetVidStrHex();
@@ -105,11 +110,19 @@ namespace usb::hid
         CString GetSerialNum();
         unsigned short InReportSize();
         unsigned short OutReportSize();
+        unsigned short FeatureRptSize();
 
         BOOL IsMyDevice(LPARAM lParam);
 
         int SendCmd(std::string& cmd);
         int RecvRsp(char* resultBuff, const int bufLen, int timeout);
+
+        // for shut or power device
+        bool SetReport(uint8_t* data);
+        bool GetReport(uint8_t* data, int tmout);
+        bool SetFeature(uint8_t* data);
+        bool GetFeature(uint8_t* data, int tmout);
+        bool GetStrDescriptor(ULONG index, uint8_t* data, int tmout);
 
     private:
         HidDevInfo m_hidDev;

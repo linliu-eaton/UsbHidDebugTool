@@ -1,5 +1,5 @@
 
-// UsbHidDebugger.h : main header file for the PROJECT_NAME application
+// UsbHidTestTool.h : main header file for the PROJECT_NAME application
 //
 
 #pragma once
@@ -11,14 +11,14 @@
 #include "resource.h"		// main symbols
 
 
-// CUsbHidDebuggerApp:
-// See UsbHidDebugger.cpp for the implementation of this class
+// CUsbHidTestToolApp:
+// See UsbHidTestTool.cpp for the implementation of this class
 //
 
-class CUsbHidDebuggerApp : public CWinApp
+class CUsbHidTestToolApp : public CWinApp
 {
 public:
-	CUsbHidDebuggerApp();
+	CUsbHidTestToolApp();
 
 // Overrides
 public:
@@ -29,4 +29,4 @@ public:
 	DECLARE_MESSAGE_MAP()
 };
 
-extern CUsbHidDebuggerApp theApp;
+extern CUsbHidTestToolApp theApp;

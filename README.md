@@ -1,7 +1,9 @@
 # UsbHidDebugTool
-USB HID tool on PC to test USB communication with device.
+USB HID tool on PC to test USB communication with device.    
+Support Q protocol, SHUT protocol and HID power device protocaol.  
 
-# TBD
-only Q UPS supported currently.
-for SHUT UPS ?
-for power device UPS ?
+# Build Tool
+Microsoft Visual Studio 2017 or higher
+
+# TODO
+

@@ -1,27 +1,27 @@
 
-// UsbHidDebugger.cpp : Defines the class behaviors for the application.
+// UsbHidTestTool.cpp : Defines the class behaviors for the application.
 //
 
 #include "pch.h"
 #include "framework.h"
-#include "UsbHidDebugger.h"
-#include "UsbHidDebuggerDlg.h"
+#include "UsbHidTestTool.h"
+#include "UsbHidTestToolDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 
-// CUsbHidDebuggerApp
+// CUsbHidTestToolApp
 
-BEGIN_MESSAGE_MAP(CUsbHidDebuggerApp, CWinApp)
+BEGIN_MESSAGE_MAP(CUsbHidTestToolApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
-// CUsbHidDebuggerApp construction
+// CUsbHidTestToolApp construction
 
-CUsbHidDebuggerApp::CUsbHidDebuggerApp()
+CUsbHidTestToolApp::CUsbHidTestToolApp()
 {
 	// support Restart Manager
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
@@ -31,14 +31,14 @@ CUsbHidDebuggerApp::CUsbHidDebuggerApp()
 }
 
 
-// The one and only CUsbHidDebuggerApp object
+// The one and only CUsbHidTestToolApp object
 
-CUsbHidDebuggerApp theApp;
+CUsbHidTestToolApp theApp;
 
 
-// CUsbHidDebuggerApp initialization
+// CUsbHidTestToolApp initialization
 
-BOOL CUsbHidDebuggerApp::InitInstance()
+BOOL CUsbHidTestToolApp::InitInstance()
 {
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
@@ -71,7 +71,7 @@ BOOL CUsbHidDebuggerApp::InitInstance()
 	// such as the name of your company or organization
 	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
 
-	CUsbHidDebuggerDlg dlg;
+	CUsbHidTestToolDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
